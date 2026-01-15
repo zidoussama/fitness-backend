@@ -1,15 +1,35 @@
+const User = require('../models/User');
+const UserProfile = require('../models/userProfile');
+
 exports.createUserProfile = async (req, res) => {
     try {
         const { userId, age, gender, height, weight, goal, activityLevel } = req.body;
+
         // Validate input
-        if (!userId || !age || !gender || !height || !weight || !goal || !activityLevel) {
+        if (
+            !userId ||
+            age == null ||
+            !gender ||
+            height == null ||
+            weight == null ||
+            !goal ||
+            !activityLevel
+        ) {
             return res.status(400).json({ message: 'All fields are required' });
         }
+
         // Check if user exists
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
+
+        // Check if profile already exists
+        const existingProfile = await UserProfile.findOne({ userId });
+        if (existingProfile) {
+            return res.status(409).json({ message: 'User profile already exists' });
+        }
+
         // Create user profile
         const newUserProfile = new UserProfile({
             userId,
@@ -20,19 +40,21 @@ exports.createUserProfile = async (req, res) => {
             goal,
             activityLevel
         });
-        // Save user profile to database
+
         const savedProfile = await newUserProfile.save();
+
         res.status(201).json({
             status: 'ok',
             msg: 'User profile created successfully',
             profile: savedProfile
         });
-    }
-    catch (err) {
-        console.error(err);
+
+    } catch (err) {
+        console.error('CreateUserProfile Error:', err);
         res.status(500).json({ message: 'Server error', error: err.message });
     }
 };
+
 exports.getUserProfile = async (req, res) => {
     try {
         const { userId } = req.params;
